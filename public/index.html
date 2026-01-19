@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Archer Chess</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div id="app">
+    <!-- Menu Screen -->
+    <div id="menu-screen" class="screen active">
+      <h1>♛ Archer Chess ♚</h1>
+      <p class="subtitle">Real-time chess with an archer king</p>
+      
+      <div class="menu-section">
+        <input type="text" id="game-id-input" placeholder="Enter Game ID or leave blank">
+        <button id="join-btn" class="btn primary">Play</button>
+      </div>
+      
+      <div class="rules-summary">
+        <h3>Quick Rules</h3>
+        <ul>
+          <li>Real-time - no turns!</li>
+          <li>Energy regenerates (1/sec, max 5)</li>
+          <li>King can shoot (2 energy)</li>
+          <li>Capture the enemy King to win</li>
+        </ul>
+      </div>
+    </div>
+    
+    <!-- Waiting Screen -->
+    <div id="waiting-screen" class="screen">
+      <h2>Waiting for opponent...</h2>
+      <p>Game ID: <span id="waiting-game-id"></span></p>
+      <p>Share this ID with a friend!</p>
+      <div class="loader"></div>
+    </div>
+    
+    <!-- Game Screen -->
+    <div id="game-screen" class="screen">
+      <div id="game-header">
+        <div id="opponent-info" class="player-info">
+          <span class="player-label">Opponent</span>
+          <div class="energy-bar">
+            <div id="opponent-energy-fill" class="energy-fill"></div>
+          </div>
+          <span id="opponent-energy-text" class="energy-text">0.0</span>
+        </div>
+      </div>
+      
+      <div id="game-container">
+        <canvas id="game-canvas"></canvas>
+        <div id="action-indicator"></div>
+      </div>
+      
+      <div id="game-footer">
+        <div id="player-info" class="player-info">
+          <span class="player-label">You (<span id="player-color"></span>)</span>
+          <div class="energy-bar">
+            <div id="player-energy-fill" class="energy-fill"></div>
+          </div>
+          <span id="player-energy-text" class="energy-text">0.0</span>
+        </div>
+        <div id="action-buttons">
+          <button id="shoot-mode-btn" class="btn action-btn">🏹 Shoot Mode</button>
+          <button id="cancel-btn" class="btn action-btn" disabled>✕ Cancel</button>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Game Over Screen -->
+    <div id="gameover-screen" class="screen">
+      <h2 id="gameover-title">Game Over</h2>
+      <p id="gameover-message"></p>
+      <button id="play-again-btn" class="btn primary">Play Again</button>
+    </div>
+  </div>
+  
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="js/constants.js"></script>
+  <script src="js/pieces.js"></script>
+  <script src="js/network.js"></script>
+  <script src="js/game.js"></script>
+</body>
+</html>
