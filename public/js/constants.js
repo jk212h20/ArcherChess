@@ -10,7 +10,8 @@ const ENERGY_COSTS = {
   bishop: 2,
   knight: 2,
   pawn: 1,
-  shoot: 2
+  shoot: 2,
+  castle: 2
 };
 
 // Colors

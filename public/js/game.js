@@ -67,6 +67,14 @@ class Game {
       this.toggleShootMode();
     });
     
+    // Castle buttons
+    document.getElementById('castle-kingside-btn').addEventListener('click', () => {
+      this.doCastle('kingside');
+    });
+    document.getElementById('castle-queenside-btn').addEventListener('click', () => {
+      this.doCastle('queenside');
+    });
+    
     // Cancel button
     document.getElementById('cancel-btn').addEventListener('click', () => {
       this.cancelPremove();
@@ -271,10 +279,34 @@ class Game {
     this.updateShootModeButton();
   }
   
+  doCastle(side) {
+    if (!this.gameStarted || this.gameOver) return;
+    if (!canCastle(this.board, this.playerColor, side)) return;
+    
+    network.sendPremove({
+      type: 'castle',
+      side: side
+    });
+    
+    this.selectedPiece = null;
+    this.validMoves = [];
+    this.shootMode = false;
+    this.shootTargets = [];
+  }
+  
   cancelPremove() {
     network.cancelPremove();
     this.premove = null;
     document.getElementById('cancel-btn').disabled = true;
+  }
+  
+  updateCastleButtons() {
+    if (!this.board) return;
+    const kingsideBtn = document.getElementById('castle-kingside-btn');
+    const queensideBtn = document.getElementById('castle-queenside-btn');
+    
+    kingsideBtn.disabled = !canCastle(this.board, this.playerColor, 'kingside');
+    queensideBtn.disabled = !canCastle(this.board, this.playerColor, 'queenside');
   }
   
   updateEnergyDisplay() {
@@ -323,6 +355,7 @@ class Game {
   render() {
     if (this.gameStarted && !this.gameOver) {
       this.drawBoard();
+      this.updateCastleButtons();
     }
     requestAnimationFrame(() => this.render());
   }
@@ -425,23 +458,25 @@ class Game {
   drawPiece(ctx, piece, x, y, size) {
     const symbol = PIECE_SYMBOLS[piece.color][piece.type];
     
-    ctx.font = `${size * 0.7}px serif`;
+    ctx.font = `bold ${size * 0.7}px serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     
     // Draw shadow for better visibility
-    ctx.fillStyle = piece.color === 'white' ? 'rgba(0,0,0,0.3)' : 'rgba(255,255,255,0.3)';
+    ctx.fillStyle = 'rgba(0,0,0,0.3)';
     ctx.fillText(symbol, x + 2, y + 2);
     
-    // Draw piece
-    ctx.fillStyle = piece.color === 'white' ? '#fff' : '#000';
-    ctx.fillText(symbol, x, y);
-    
-    // Draw crown on king for visibility
-    if (piece.type === 'king') {
-      ctx.strokeStyle = piece.color === 'white' ? '#000' : '#fff';
-      ctx.lineWidth = 1;
+    if (piece.color === 'white') {
+      // White pieces: solid white fill with black outline
+      ctx.fillStyle = '#ffffff';
+      ctx.fillText(symbol, x, y);
+      ctx.strokeStyle = '#000000';
+      ctx.lineWidth = 2;
       ctx.strokeText(symbol, x, y);
+    } else {
+      // Black pieces: solid black
+      ctx.fillStyle = '#000000';
+      ctx.fillText(symbol, x, y);
     }
   }
   

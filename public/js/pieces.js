@@ -199,3 +199,39 @@ function getKingPosition(board, playerColor) {
   }
   return null;
 }
+
+// Check if castling is available
+function canCastle(board, playerColor, side) {
+  const row = playerColor === 'white' ? 7 : 0;
+  const king = board[row][4];
+  
+  // King must be in place and not moved
+  if (!king || king.type !== 'king' || king.color !== playerColor || king.hasMoved) {
+    return false;
+  }
+  
+  if (side === 'kingside') {
+    // Check rook at h-file (col 7)
+    const rook = board[row][7];
+    if (!rook || rook.type !== 'rook' || rook.color !== playerColor || rook.hasMoved) {
+      return false;
+    }
+    // Check squares between king and rook are empty
+    if (board[row][5] || board[row][6]) {
+      return false;
+    }
+    return true;
+  } else if (side === 'queenside') {
+    // Check rook at a-file (col 0)
+    const rook = board[row][0];
+    if (!rook || rook.type !== 'rook' || rook.color !== playerColor || rook.hasMoved) {
+      return false;
+    }
+    // Check squares between king and rook are empty
+    if (board[row][1] || board[row][2] || board[row][3]) {
+      return false;
+    }
+    return true;
+  }
+  return false;
+}

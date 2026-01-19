@@ -11,7 +11,7 @@ app.use(express.static('public'));
 
 // Game constants
 const ENERGY_MAX = 5;
-const ENERGY_REGEN_RATE = 1; // per second
+const ENERGY_REGEN_RATE = 0.5; // per second (half as fast)
 const TICK_RATE = 60; // server ticks per second
 const TICK_INTERVAL = 1000 / TICK_RATE;
 
@@ -23,7 +23,8 @@ const ENERGY_COSTS = {
   bishop: 2,
   knight: 2,
   pawn: 1,
-  shoot: 2
+  shoot: 2,
+  castle: 2 // Castling costs 2 energy
 };
 
 // Active games
@@ -145,6 +146,42 @@ function isValidBishopMove(board, fromRow, fromCol, toRow, toCol) {
   return true;
 }
 
+// Check if castling is valid
+function canCastle(board, color, side) {
+  const row = color === 'white' ? 7 : 0;
+  const king = board[row][4];
+  
+  // King must be in place and not moved
+  if (!king || king.type !== 'king' || king.color !== color || king.hasMoved) {
+    return false;
+  }
+  
+  if (side === 'kingside') {
+    // Check rook at h-file (col 7)
+    const rook = board[row][7];
+    if (!rook || rook.type !== 'rook' || rook.color !== color || rook.hasMoved) {
+      return false;
+    }
+    // Check squares between king and rook are empty
+    if (board[row][5] || board[row][6]) {
+      return false;
+    }
+    return true;
+  } else if (side === 'queenside') {
+    // Check rook at a-file (col 0)
+    const rook = board[row][0];
+    if (!rook || rook.type !== 'rook' || rook.color !== color || rook.hasMoved) {
+      return false;
+    }
+    // Check squares between king and rook are empty
+    if (board[row][1] || board[row][2] || board[row][3]) {
+      return false;
+    }
+    return true;
+  }
+  return false;
+}
+
 // Check if king can shoot target (line of sight)
 function canShootTarget(board, kingRow, kingCol, targetRow, targetCol, kingColor) {
   const target = board[targetRow][targetCol];
@@ -243,6 +280,29 @@ function processTick(game) {
 function processSimultaneousActions(game, actions) {
   const moves = actions.filter(a => a.type === 'move');
   const shots = actions.filter(a => a.type === 'shoot');
+  const castles = actions.filter(a => a.type === 'castle');
+  
+  // Process castling first (atomic action)
+  for (const castle of castles) {
+    const row = castle.color === 'white' ? 7 : 0;
+    const king = game.board[row][4];
+    
+    if (castle.side === 'kingside') {
+      const rook = game.board[row][7];
+      // Move king to g-file, rook to f-file
+      game.board[row][4] = null;
+      game.board[row][7] = null;
+      game.board[row][6] = { ...king, hasMoved: true };
+      game.board[row][5] = { ...rook, hasMoved: true };
+    } else {
+      const rook = game.board[row][0];
+      // Move king to c-file, rook to d-file
+      game.board[row][4] = null;
+      game.board[row][0] = null;
+      game.board[row][2] = { ...king, hasMoved: true };
+      game.board[row][3] = { ...rook, hasMoved: true };
+    }
+  }
   
   // First, record where pieces are moving FROM
   const movingFrom = new Map();
@@ -443,6 +503,17 @@ io.on('connection', (socket) => {
       game.premoves[color] = { ...data, cost };
       
       socket.emit('premoveSet', { ...data, cost });
+    } else if (data.type === 'castle') {
+      // Validate castling
+      if (!canCastle(game.board, color, data.side)) return;
+      
+      game.premoves[color] = { 
+        type: 'castle',
+        side: data.side,
+        cost: ENERGY_COSTS.castle 
+      };
+      
+      socket.emit('premoveSet', { type: 'castle', side: data.side, cost: ENERGY_COSTS.castle });
     } else if (data.type === 'shoot') {
       // Find king
       let kingRow, kingCol;
